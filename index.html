@@ -22,8 +22,7 @@
   <template id="homeTemplate">
     <section class="screen home-screen" aria-labelledby="homeHeading">
       <div class="welcome-row">
-        <div><p class="eyebrow">かんたん・確実</p><h2 id="homeHeading">連絡内容を選ぶ</h2></div>
-        <span class="recipient-mini" id="homeRecipient"></span>
+        <div><p class="eyebrow">かんたん・確実</p><h2 id="homeHeading">連絡文を作成</h2></div>
       </div>
       <div id="templateButtons" class="template-buttons"></div>
       <section class="history-preview" aria-labelledby="recentHeading">
@@ -36,12 +35,13 @@
   <template id="composerTemplate">
     <section class="screen composer-screen" aria-labelledby="composerHeading">
       <div class="title-row"><span id="composerIcon" class="title-icon"></span><div><p class="eyebrow">文面作成</p><h2 id="composerHeading"></h2></div></div>
-      <div id="recipientBanner" class="recipient-banner" aria-live="polite"></div>
       <form id="messageForm" novalidate>
+        <section id="situationCard" class="form-card">
+          <h3>状況</h3>
+          <div class="field"><label for="situation">連絡する状況</label><select id="situation" name="situation"></select></div>
+        </section>
         <section class="form-card common-card">
-          <h3>送信先とあいさつ</h3>
-          <div class="field"><label for="recipient">送信先</label><select id="recipient" name="recipient"></select></div>
-          <div id="customRecipientWrap" class="field hidden"><label for="customRecipient">送信先の名前</label><input id="customRecipient" name="customRecipient" autocomplete="off" placeholder="例：秘書の田中様"></div>
+          <h3>文頭と文末</h3>
           <div class="field-grid">
             <div class="field"><label for="opening">文頭</label><select id="opening" name="opening"></select></div>
             <div class="field"><label for="closing">文末</label><select id="closing" name="closing"></select></div>
@@ -58,12 +58,11 @@
   <template id="resultTemplate">
     <section class="screen result-screen" aria-labelledby="resultHeading">
       <p class="eyebrow">生成結果</p><h2 id="resultHeading">送る前に確認</h2>
-      <div id="resultRecipient" class="recipient-banner result-recipient"></div>
       <div class="field"><label for="resultText">生成された文面（直接修正できます）</label><textarea id="resultText" class="result-text" rows="14"></textarea></div>
       <div class="result-actions">
         <button id="shareButton" class="secondary-button hidden" type="button">共有画面を開く</button>
         <button id="editButton" class="secondary-button" type="button">内容を修正</button>
-        <button id="resultHomeButton" class="ghost-button" type="button">ホームへ戻る</button>
+        <button id="resultHomeButton" class="ghost-button" type="button">最初に戻る</button>
       </div>
       <p class="privacy-note">この履歴はアプリ内で文面を生成・コピーした記録です。実際の送信証明ではありません。</p>
       <div class="bottom-spacer"></div>
