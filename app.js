@@ -3,8 +3,8 @@
 
   const STORAGE_KEY = 'driverMessageMakerDataV1';
   const RECIPIENTS = ['会長本人', '会長の彼女', 'グループLINE', 'その他'];
-  const OPENINGS = ['お疲れ様です。', '承知しました！', '承知しました。', 'かしこまりました。', '申し訳ありません。', 'なし'];
-  const CLOSINGS = ['よろしくお願いいたします。', 'よろしくお願いいたします🙏', 'ご確認よろしくお願いいたします。', 'なし'];
+  const OPENINGS = ['おはようございます！', 'おはようございます。', 'お疲れ様です。', '承知しました！', '承知しました。', 'かしこまりました。', '申し訳ありません。', 'なし'];
+  const CLOSINGS = ['本日もよろしくお願いします🙇', '本日もよろしくお願いします。', '本日はよろしくお願いします。', 'よろしくお願いします！', 'よろしくお願いいたします。', 'よろしくお願いいたします🙏', 'ご確認よろしくお願いいたします。', 'なし'];
   const PLACEHOLDERS = ['日付', '時刻', '場所', '到着時刻', '所要時間', '名前', 'URL'];
 
   // 文面テンプレートの基本設定。表現を変える場合はここを編集します。
@@ -14,6 +14,8 @@
     headingPickup: { title: 'お迎えに向かいます', icon: '🚗', opening: '承知しました。', closing: 'よろしくお願いいたします。' },
     arrived: { title: '到着しました', icon: '✅', opening: 'お疲れ様です。', closing: 'よろしくお願いいたします。' },
     delayed: { title: '到着が遅れます', icon: '⚠️', opening: '申し訳ありません。', closing: 'よろしくお願いいたします。' },
+    morningWaiting: { title: '朝の待機連絡', icon: '🌅', opening: 'おはようございます！', closing: '本日もよろしくお願いします🙇' },
+    pickupNotice: { title: 'お迎え予定を連絡', icon: '🕒', opening: 'お疲れ様です。', closing: 'よろしくお願いします！' },
     custom: { title: '自由テンプレ', icon: '📝', opening: 'なし', closing: 'なし' }
   };
 
@@ -164,7 +166,8 @@
     const recipient = values.recipientChoice || data.settings.defaultRecipient;
     document.getElementById('recipient').innerHTML = optionHtml(RECIPIENTS, recipient);
     document.getElementById('opening').innerHTML = optionHtml(OPENINGS, values.opening || template.opening);
-    document.getElementById('closing').innerHTML = optionHtml(CLOSINGS, values.closing || (data.settings.defaultClosing || template.closing));
+    const initialClosing = ['morningWaiting', 'pickupNotice'].includes(type) ? template.closing : (data.settings.defaultClosing || template.closing);
+    document.getElementById('closing').innerHTML = optionHtml(CLOSINGS, values.closing || initialClosing);
     document.getElementById('customRecipient').value = values.customRecipient || '';
     document.getElementById('customRecipientWrap').classList.toggle('hidden', recipient !== 'その他');
     document.getElementById('specificFields').innerHTML = buildFields(type, values);
@@ -187,6 +190,8 @@
     if (type === 'headingPickup') return `<section class="form-card"><h3>到着予定</h3>${selectField('duration','到着までの時間',['未指定','約5分','約10分','約15分','約20分','約30分','自由入力'],v.duration || '約10分')}<div id="customDurationWrap" class="field hidden"><label for="customDuration">到着までの時間</label><input id="customDuration" name="customDuration" value="${escapeHtml(v.customDuration || '')}" placeholder="例：約8分"></div><div class="field"><label for="arrivalTime">到着予定時刻（任意）</label><select id="arrivalTime" name="arrivalTime">${timeOptions(v.arrivalTime)}</select></div>${field('currentLocation','現在地','例：烏丸御池付近','text',v.currentLocation)}${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
     if (type === 'arrived') return `<section class="form-card"><h3>到着の内容</h3>${placeField('arrivalPlace','到着場所','arrival',v.arrivalPlace,'例：ホテル')}${field('waitingPosition','待機位置','例：正面入口付近','text',v.waitingPosition)}${field('vehicleNote','車両補足','例：黒色の車両','text',v.vehicleNote)}</section>`;
     if (type === 'delayed') return `<section class="form-card"><h3>遅延の内容</h3>${selectField('delayReason','遅延理由',['渋滞のため','交通規制のため','駐車場からの出庫に時間がかかっているため','事故渋滞のため','その他'],v.delayReason || '渋滞のため')}<div id="customDelayReasonWrap" class="field hidden"><label for="customDelayReason">遅延理由</label><input id="customDelayReason" name="customDelayReason" value="${escapeHtml(v.customDelayReason || '')}" placeholder="例：道路工事のため"></div>${selectField('delayDuration','遅延時間',['未指定','約5分','約10分','約15分','約20分','約30分','自由入力'],v.delayDuration || '約15分')}<div id="customDelayDurationWrap" class="field hidden"><label for="customDelayDuration">遅延時間</label><input id="customDelayDuration" name="customDelayDuration" value="${escapeHtml(v.customDelayDuration || '')}" placeholder="例：約8分"></div><div class="field"><label for="newArrivalTime">新しい到着予定時刻（任意）</label><select id="newArrivalTime" name="newArrivalTime">${timeOptions(v.newArrivalTime)}</select></div>${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
+    if (type === 'morningWaiting') return `<section class="form-card"><h3>朝の待機状況</h3>${selectField('waitingStatus','連絡内容',['到着して待機中','少し早く到着・離れて待機中','到着予定を連絡'],v.waitingStatus || '到着して待機中')}${placeField('arrivalPlace','待機・到着場所','arrival',v.arrivalPlace,'例：ラトゥール下')}${field('waitingPosition','現在の待機位置（任意）','例：若干離れた場所','text',v.waitingPosition)}<div class="field"><label for="arrivalTime">到着・待機予定時刻（任意）</label><select id="arrivalTime" name="arrivalTime">${timeOptions(v.arrivalTime)}</select></div><div class="field"><label for="moveTime">入口へ移動する時刻（任意）</label><select id="moveTime" name="moveTime">${timeOptions(v.moveTime)}</select></div>${selectField('callToAction','呼びかけ',['いつでもご用命ください☺️','いつでもご用命ください！','ご用命ください。','なし'],v.callToAction || 'いつでもご用命ください☺️')}${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
+    if (type === 'pickupNotice') return `<section class="form-card"><h3>お迎え予定</h3><div class="field"><span class="label-like">日付</span><div class="radio-row">${['今日','明日','日付指定'].map((x) => `<label class="radio-chip"><input type="radio" name="dateMode" value="${x}"${(v.dateMode || '今日') === x ? ' checked' : ''}><span>${x}</span></label>`).join('')}</div></div><div id="customDateWrap" class="field hidden"><label for="customDate">日付</label><input id="customDate" name="customDate" type="date" value="${escapeHtml(v.customDate || '')}"></div><div class="field"><label for="pickupTime">お迎え時刻</label><select id="pickupTime" name="pickupTime">${timeOptions(v.pickupTime || now, false)}</select></div>${placeField('pickupPlace','お迎え場所','pickup',v.pickupPlace,'例：ラトゥール')}${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
     return '';
   }
 
@@ -258,6 +263,25 @@
       const arrival = v.newArrivalTime ? `${v.newArrivalTime}頃に到着予定です。` : '';
       return openingClosing(v, paragraphJoin([paragraphJoin([delay, arrival]).replace(/\n\n/g, '\n'), v.note]));
     }
+    if (type === 'morningWaiting') {
+      let statusText = '';
+      if (v.waitingStatus === '少し早く到着・離れて待機中') {
+        statusText = `少し早いですが到着して${v.waitingPosition || '若干離れた場所'}で待機しております。`;
+      } else if (v.waitingStatus === '到着予定を連絡') {
+        statusText = `${v.arrivalTime ? `${v.arrivalTime}には` : ''}${v.arrivalPlace ? `${v.arrivalPlace}で` : ''}待機しておきます。`;
+      } else {
+        const place = [v.arrivalPlace, v.waitingPosition].filter(Boolean).join('・');
+        statusText = `${place ? `${place}に` : ''}到着して待機しております！`;
+      }
+      const move = v.moveTime && v.arrivalPlace ? `${v.moveTime}前に${v.arrivalPlace}に移動します。` : '';
+      const call = v.callToAction === 'なし' ? '' : v.callToAction;
+      return openingClosing(v, paragraphJoin([statusText, move, call, v.note]));
+    }
+    if (type === 'pickupNotice') {
+      const dateText = v.dateMode === '今日' ? '本日' : v.dateMode === '明日' ? '明日' : formatJapaneseDate(v.customDate);
+      const main = `${dateText}${v.pickupTime ? `${v.pickupTime}ごろに` : ''}${v.pickupPlace ? `${v.pickupPlace}に` : ''}お迎えにあがらせていただきます。`;
+      return openingClosing(v, paragraphJoin([main, v.note]));
+    }
     return '';
   }
   function savePlace(category, value) {
@@ -268,6 +292,8 @@
     if (type === 'pickupConfirm') savePlace('pickup', v.pickupPlace);
     if (type === 'waitingLocation') { savePlace('waiting', v.waitingPlace); savePlace('meeting', v.meetingPlace); }
     if (type === 'arrived') savePlace('arrival', v.arrivalPlace);
+    if (type === 'morningWaiting') savePlace('arrival', v.arrivalPlace);
+    if (type === 'pickupNotice') savePlace('pickup', v.pickupPlace);
   }
   function generateFromForm(form) {
     const values = formValues(form); const recipient = getRecipient(form);
