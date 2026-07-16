@@ -1,4 +1,4 @@
-const CACHE_NAME = 'driver-message-maker-v4';
+const CACHE_NAME = 'driver-message-maker-v5';
 const APP_FILES = ['./', './index.html', './style.css', './app.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (event) => {
