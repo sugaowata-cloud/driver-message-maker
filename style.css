@@ -11,10 +11,11 @@ button, input, select, textarea { font: inherit; }
 button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #75a7ed; outline-offset: 2px; }
 .hidden { display: none !important; }
-.app-header { position: sticky; top: 0; z-index: 20; height: 60px; padding: env(safe-area-inset-top) 14px 0; display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; background: var(--primary); color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.16); }
-.app-header h1 { margin: 0; font-size: clamp(17px, 5vw, 21px); text-align: center; white-space: nowrap; }
+.app-header { position: sticky; top: 0; z-index: 20; height: 60px; padding: env(safe-area-inset-top) 10px 0; display: grid; grid-template-columns: 42px minmax(0, 1fr) 42px; gap: 4px; align-items: center; background: var(--primary); color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.16); }
+.app-header h1 { grid-column: 2; grid-row: 1; min-width: 0; margin: 0; overflow: hidden; font-size: clamp(13px, 4.4vw, 21px); text-align: center; white-space: nowrap; text-overflow: ellipsis; }
 .header-icon, .header-back { width: 42px; height: 42px; border: 0; color: #fff; background: transparent; border-radius: 10px; font-size: 22px; }
-.header-back { font-size: 38px; line-height: 1; }
+.header-icon { grid-column: 3; grid-row: 1; justify-self: end; }
+.header-back { grid-column: 1; grid-row: 1; font-size: 38px; line-height: 1; }
 .screen { width: min(100%, 680px); margin: 0 auto; padding: 22px 16px 32px; }
 h2 { margin: 0; font-size: 24px; line-height: 1.25; }
 h3 { margin: 0 0 16px; font-size: 18px; }
