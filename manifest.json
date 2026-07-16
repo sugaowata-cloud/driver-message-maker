@@ -1,0 +1,14 @@
+{
+  "name": "運転連絡メーカー",
+  "short_name": "運転連絡",
+  "description": "送迎業務で使う定型連絡文をすばやく作成・コピーします。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#1557b0",
+  "lang": "ja",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
