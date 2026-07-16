@@ -4,8 +4,9 @@
   const STORAGE_KEY = 'driverMessageMakerDataV1';
   const RECIPIENTS = ['会長本人', '会長の彼女', 'グループLINE', 'その他'];
   const OPENINGS = ['おはようございます！', 'おはようございます。', 'お疲れ様です。', '承知しました！', '承知しました。', 'かしこまりました。', '申し訳ありません。', 'なし'];
-  const CLOSINGS = ['本日もよろしくお願いします🙇', '本日もよろしくお願いします。', '本日はよろしくお願いします。', 'よろしくお願いします！', 'よろしくお願いいたします。', 'よろしくお願いいたします🙏', 'ご確認よろしくお願いいたします。', 'なし'];
+  const CLOSINGS = ['よろしくお願いします。', '本日もよろしくお願いします。', '本日もよろしくお願いします🙇', '本日はよろしくお願いします。', 'よろしくお願いします！', 'よろしくお願いいたします。', 'よろしくお願いいたします🙏', 'ご確認よろしくお願いいたします。', 'なし'];
   const PLACEHOLDERS = ['日付', '時刻', '場所', '到着時刻', '所要時間', '名前', 'URL'];
+  const STANDARD_PLACES = { pickup: ['ラトゥール', 'ラトゥール下'], waiting: ['ラトゥール', 'ラトゥール下'], meeting: ['ラトゥール', 'ラトゥール下'], arrival: ['ラトゥール', 'ラトゥール下'] };
 
   // 文面テンプレートの基本設定。表現を変える場合はここを編集します。
   const MESSAGE_TEMPLATES = {
@@ -109,6 +110,27 @@
     }
     return html;
   }
+  function timeParts(value = '') {
+    const match = String(value).match(/^(\d{1,2}):(\d{2})$/);
+    return { hour: match ? String(Number(match[1])) : '', minute: match ? match[2] : '00' };
+  }
+  function hourOptions(selected = '', allowEmpty = true) {
+    let html = allowEmpty ? '<option value="">未指定</option>' : '';
+    for (let hour = 0; hour < 24; hour += 1) html += `<option value="${hour}"${String(hour) === String(selected) ? ' selected' : ''}>${hour}時</option>`;
+    return html;
+  }
+  function minuteOptions(selected = '00') {
+    let html = '';
+    for (let minute = 0; minute < 60; minute += 5) {
+      const value = String(minute).padStart(2, '0');
+      html += `<option value="${value}"${value === selected ? ' selected' : ''}>${value}分</option>`;
+    }
+    return html;
+  }
+  function timeField(name, label, value = '', allowEmpty = true) {
+    const parts = timeParts(value);
+    return `<div class="field"><span class="label-like">${label}</span><div class="time-parts"><div><label class="hint" for="${name}Hour">時</label><select id="${name}Hour" name="${name}Hour">${hourOptions(parts.hour, allowEmpty)}</select></div><span class="sep">：</span><div><label class="hint" for="${name}Minute">分</label><select id="${name}Minute" name="${name}Minute">${minuteOptions(parts.minute)}</select></div></div></div>`;
+  }
   function field(name, label, placeholder = '', type = 'text', value = '', extra = '') {
     return `<div class="field"><label for="${name}">${label}</label><input id="${name}" name="${name}" type="${type}" value="${escapeHtml(value)}" placeholder="${escapeHtml(placeholder)}" ${extra}></div>`;
   }
@@ -119,11 +141,12 @@
     return `<div class="field"><label for="${name}">${label}</label><textarea id="${name}" name="${name}" rows="3" placeholder="${escapeHtml(placeholder)}">${escapeHtml(value)}</textarea></div>`;
   }
   function placeField(name, label, category, value = '', placeholder = '') {
-    const chips = (data.places[category] || []).map((place) => `<button class="chip place-chip" data-target="${name}" data-value="${escapeHtml(place)}" type="button">${escapeHtml(place)}</button>`).join('');
+    const places = [...new Set([...(STANDARD_PLACES[category] || []), ...(data.places[category] || [])])];
+    const chips = places.map((place) => `<button class="chip place-chip" data-target="${name}" data-value="${escapeHtml(place)}" type="button">${escapeHtml(place)}</button>`).join('');
     return `${field(name, label, placeholder, 'text', value, 'autocomplete="off"')}${chips ? `<div class="chips" aria-label="${escapeHtml(label)}の候補">${chips}</div>` : ''}`;
   }
   function timeRange(prefix, label, start = '', end = '') {
-    return `<div class="field"><span class="label-like">${label}</span><div class="time-range"><div><label class="hint" for="${prefix}Start">開始</label><select id="${prefix}Start" name="${prefix}Start">${timeOptions(start)}</select></div><span class="sep">〜</span><div><label class="hint" for="${prefix}End">終了（任意）</label><select id="${prefix}End" name="${prefix}End">${timeOptions(end)}</select></div></div></div>`;
+    return `<div class="time-range-group"><span class="label-like">${label}</span><div class="time-range">${timeField(`${prefix}Start`,'開始',start)}<span class="range-sep">〜</span>${timeField(`${prefix}End`,'終了（任意）',end)}</div></div>`;
   }
 
   function renderHome() {
@@ -187,11 +210,11 @@
     const now = nearestTime();
     if (type === 'pickupConfirm') return `<section class="form-card"><h3>お迎えの内容</h3><div class="field"><span class="label-like">日付</span><div class="radio-row">${['今日','明日','日付指定'].map((x) => `<label class="radio-chip"><input type="radio" name="dateMode" value="${x}"${(v.dateMode || '明日') === x ? ' checked' : ''}><span>${x}</span></label>`).join('')}</div></div><div id="customDateWrap" class="field hidden"><label for="customDate">日付</label><input id="customDate" name="customDate" type="date" value="${escapeHtml(v.customDate || '')}"></div>${placeField('pickupPlace','迎え場所','pickup',v.pickupPlace,'例：ホテル')}${timeRange('departure','出発可能時間',v.departureStart || now,v.departureEnd)}${timeRange('meeting','集合時間',v.meetingStart,v.meetingEnd)}<label class="check-row"><input type="checkbox" name="includeMeeting"${v.includeMeeting ? ' checked' : ''}><span>集合時間も文面に記載する</span></label>${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
     if (type === 'waitingLocation') return `<section class="form-card"><h3>待機・合流の内容</h3>${placeField('waitingPlace','現在の待機場所','waiting',v.waitingPlace,'例：二条付近')}${selectField('duration','迎えまでの所要時間',['すぐに向かえます','約5分','約10分','約15分','約20分','約30分','自由入力'],v.duration || '約15分')}<div id="customDurationWrap" class="field hidden"><label for="customDuration">所要時間</label><input id="customDuration" name="customDuration" value="${escapeHtml(v.customDuration || '')}" placeholder="例：約8分"></div>${placeField('meetingPlace','合流地点名','meeting',v.meetingPlace,'例：四条烏丸交差点西側')}${field('mapUrl','GoogleマップURL','https://maps.google.com/...','url',v.mapUrl)}${selectField('waitingReason','待機理由',['近隣で駐車できないため','交通規制のため','周辺駐車場が満車のため','警察から移動を求められたため','その他'],v.waitingReason || '近隣で駐車できないため')}<div id="customReasonWrap" class="field hidden"><label for="customReason">待機理由</label><input id="customReason" name="customReason" value="${escapeHtml(v.customReason || '')}" placeholder="例：道路工事のため"></div>${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
-    if (type === 'headingPickup') return `<section class="form-card"><h3>到着予定</h3>${selectField('duration','到着までの時間',['未指定','約5分','約10分','約15分','約20分','約30分','自由入力'],v.duration || '約10分')}<div id="customDurationWrap" class="field hidden"><label for="customDuration">到着までの時間</label><input id="customDuration" name="customDuration" value="${escapeHtml(v.customDuration || '')}" placeholder="例：約8分"></div><div class="field"><label for="arrivalTime">到着予定時刻（任意）</label><select id="arrivalTime" name="arrivalTime">${timeOptions(v.arrivalTime)}</select></div>${field('currentLocation','現在地','例：烏丸御池付近','text',v.currentLocation)}${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
+    if (type === 'headingPickup') return `<section class="form-card"><h3>到着予定</h3>${selectField('duration','到着までの時間',['未指定','約5分','約10分','約15分','約20分','約30分','自由入力'],v.duration || '約10分')}<div id="customDurationWrap" class="field hidden"><label for="customDuration">到着までの時間</label><input id="customDuration" name="customDuration" value="${escapeHtml(v.customDuration || '')}" placeholder="例：約8分"></div>${timeField('arrivalTime','到着予定時刻（任意）',v.arrivalTime)}${field('currentLocation','現在地','例：烏丸御池付近','text',v.currentLocation)}${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
     if (type === 'arrived') return `<section class="form-card"><h3>到着の内容</h3>${placeField('arrivalPlace','到着場所','arrival',v.arrivalPlace,'例：ホテル')}${field('waitingPosition','待機位置','例：正面入口付近','text',v.waitingPosition)}${field('vehicleNote','車両補足','例：黒色の車両','text',v.vehicleNote)}</section>`;
-    if (type === 'delayed') return `<section class="form-card"><h3>遅延の内容</h3>${selectField('delayReason','遅延理由',['渋滞のため','交通規制のため','駐車場からの出庫に時間がかかっているため','事故渋滞のため','その他'],v.delayReason || '渋滞のため')}<div id="customDelayReasonWrap" class="field hidden"><label for="customDelayReason">遅延理由</label><input id="customDelayReason" name="customDelayReason" value="${escapeHtml(v.customDelayReason || '')}" placeholder="例：道路工事のため"></div>${selectField('delayDuration','遅延時間',['未指定','約5分','約10分','約15分','約20分','約30分','自由入力'],v.delayDuration || '約15分')}<div id="customDelayDurationWrap" class="field hidden"><label for="customDelayDuration">遅延時間</label><input id="customDelayDuration" name="customDelayDuration" value="${escapeHtml(v.customDelayDuration || '')}" placeholder="例：約8分"></div><div class="field"><label for="newArrivalTime">新しい到着予定時刻（任意）</label><select id="newArrivalTime" name="newArrivalTime">${timeOptions(v.newArrivalTime)}</select></div>${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
-    if (type === 'morningWaiting') return `<section class="form-card"><h3>朝の待機状況</h3>${selectField('waitingStatus','連絡内容',['到着して待機中','少し早く到着・離れて待機中','到着予定を連絡'],v.waitingStatus || '到着して待機中')}${placeField('arrivalPlace','待機・到着場所','arrival',v.arrivalPlace,'例：ラトゥール下')}${field('waitingPosition','現在の待機位置（任意）','例：若干離れた場所','text',v.waitingPosition)}<div class="field"><label for="arrivalTime">到着・待機予定時刻（任意）</label><select id="arrivalTime" name="arrivalTime">${timeOptions(v.arrivalTime)}</select></div><div class="field"><label for="moveTime">入口へ移動する時刻（任意）</label><select id="moveTime" name="moveTime">${timeOptions(v.moveTime)}</select></div>${selectField('callToAction','呼びかけ',['いつでもご用命ください☺️','いつでもご用命ください！','ご用命ください。','なし'],v.callToAction || 'いつでもご用命ください☺️')}${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
-    if (type === 'pickupNotice') return `<section class="form-card"><h3>お迎え予定</h3><div class="field"><span class="label-like">日付</span><div class="radio-row">${['今日','明日','日付指定'].map((x) => `<label class="radio-chip"><input type="radio" name="dateMode" value="${x}"${(v.dateMode || '今日') === x ? ' checked' : ''}><span>${x}</span></label>`).join('')}</div></div><div id="customDateWrap" class="field hidden"><label for="customDate">日付</label><input id="customDate" name="customDate" type="date" value="${escapeHtml(v.customDate || '')}"></div><div class="field"><label for="pickupTime">お迎え時刻</label><select id="pickupTime" name="pickupTime">${timeOptions(v.pickupTime || now, false)}</select></div>${placeField('pickupPlace','お迎え場所','pickup',v.pickupPlace,'例：ラトゥール')}${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
+    if (type === 'delayed') return `<section class="form-card"><h3>遅延の内容</h3>${selectField('delayReason','遅延理由',['渋滞のため','交通規制のため','駐車場からの出庫に時間がかかっているため','事故渋滞のため','その他'],v.delayReason || '渋滞のため')}<div id="customDelayReasonWrap" class="field hidden"><label for="customDelayReason">遅延理由</label><input id="customDelayReason" name="customDelayReason" value="${escapeHtml(v.customDelayReason || '')}" placeholder="例：道路工事のため"></div>${selectField('delayDuration','遅延時間',['未指定','約5分','約10分','約15分','約20分','約30分','自由入力'],v.delayDuration || '約15分')}<div id="customDelayDurationWrap" class="field hidden"><label for="customDelayDuration">遅延時間</label><input id="customDelayDuration" name="customDelayDuration" value="${escapeHtml(v.customDelayDuration || '')}" placeholder="例：約8分"></div>${timeField('newArrivalTime','新しい到着予定時刻（任意）',v.newArrivalTime)}${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
+    if (type === 'morningWaiting') return `<section class="form-card"><h3>朝の待機状況</h3>${selectField('waitingStatus','連絡内容',['到着して待機中','少し早く到着・離れて待機中','到着予定を連絡'],v.waitingStatus || '到着して待機中')}${placeField('arrivalPlace','待機・到着場所','arrival',v.arrivalPlace,'例：ラトゥール下')}${field('waitingPosition','現在の待機位置（任意）','例：若干離れた場所','text',v.waitingPosition)}${timeField('arrivalTime','到着・待機予定時刻（任意）',v.arrivalTime)}${timeField('moveTime','入口へ移動する時刻（任意）',v.moveTime)}${selectField('callToAction','呼びかけ',['いつでもご用命ください☺️','いつでもご用命ください！','ご用命ください。','なし'],v.callToAction || 'いつでもご用命ください☺️')}${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
+    if (type === 'pickupNotice') return `<section class="form-card"><h3>お迎え予定</h3><div class="field"><span class="label-like">日付</span><div class="radio-row">${['今日','明日','日付指定'].map((x) => `<label class="radio-chip"><input type="radio" name="dateMode" value="${x}"${(v.dateMode || '今日') === x ? ' checked' : ''}><span>${x}</span></label>`).join('')}</div></div><div id="customDateWrap" class="field hidden"><label for="customDate">日付</label><input id="customDate" name="customDate" type="date" value="${escapeHtml(v.customDate || '')}"></div>${timeField('pickupTime','お迎え時刻',v.pickupTime || now,false)}${placeField('pickupPlace','お迎え場所','pickup',v.pickupPlace,'例：ラトゥール')}${textareaField('note','補足','文面に加えたい内容',v.note)}</section>`;
     return '';
   }
 
@@ -213,6 +236,10 @@
   function formValues(form) {
     const values = {};
     new FormData(form).forEach((value, key) => { values[key] = trim(value); });
+    Object.keys(values).filter((key) => key.endsWith('Hour')).forEach((key) => {
+      const base = key.slice(0, -4); const hour = values[key]; const minute = values[`${base}Minute`] || '00';
+      values[base] = hour === '' ? '' : `${String(hour).padStart(2, '0')}:${minute}`;
+    });
     values.includeMeeting = Boolean(form.elements.includeMeeting?.checked);
     values.recipientChoice = form.elements.recipient?.value;
     values.customRecipient = trim(form.elements.customRecipient?.value);
