@@ -1,5 +1,5 @@
-const CACHE_NAME = 'driver-message-maker-v8';
-const APP_FILES = ['./', './index.html', './style.css', './app.js', './manifest.json', './icon.svg'];
+const CACHE_NAME = 'driver-message-maker-v9';
+const APP_FILES = ['./', './index.html', './style.css?v=8', './app.js?v=8', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_FILES)));
